@@ -72,10 +72,10 @@ func (self *Cluster) updateCacheList(zkConn *zk.Conn, serviceCode string) {
 			newServers[addr] = server
 			for i := 0; i < 40; i++ {
 				digest := md5.Sum([]byte(fmt.Sprintf("%v-%v", addr, i)))
-				insertHashPoint(newPoints, bytes2uint32([4]byte(digest[:4])), server)
-				insertHashPoint(newPoints, bytes2uint32([4]byte(digest[4:8])), server)
-				insertHashPoint(newPoints, bytes2uint32([4]byte(digest[8:12])), server)
-				insertHashPoint(newPoints, bytes2uint32([4]byte(digest[12:])), server)
+				insertHashPoint(&newPoints, bytes2uint32([4]byte(digest[:4])), server)
+				insertHashPoint(&newPoints, bytes2uint32([4]byte(digest[4:8])), server)
+				insertHashPoint(&newPoints, bytes2uint32([4]byte(digest[8:12])), server)
+				insertHashPoint(&newPoints, bytes2uint32([4]byte(digest[12:])), server)
 			}
 		}
 
@@ -102,18 +102,18 @@ func bytes2uint32(b [4]byte) uint32 {
 	return u
 }
 
-func insertHashPoint(points []point, hashValue uint32, node *Server) {
-	for i, point := range points {
+func insertHashPoint(points *[]point, hashValue uint32, node *Server) {
+	for i, point := range *points {
 		if hashValue == point.hashValue {
 			// Duplicate points.
 			return
 		}
 		if hashValue < point.hashValue {
-			points = append(points[:i+1], points[i:]...)
-			points[i].hashValue = hashValue
-			points[i].node = node
+			*points = append((*points)[:i+1], (*points)[i:]...)
+			(*points)[i].hashValue = hashValue
+			(*points)[i].node = node
 			return
 		}
 	}
-	points = append(points, point{hashValue: hashValue, node: node})
+	*points = append(*points, point{hashValue: hashValue, node: node})
 }
