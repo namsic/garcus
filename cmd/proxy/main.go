@@ -61,6 +61,7 @@ func handler(conn net.Conn) {
 				}
 				panic(err)
 			}
+			rw.Flush()
 		case "get":
 			node := memcachedCluster.FindNodeByKey(tokens[1])
 			node.Request(raw, connCh)
@@ -72,6 +73,7 @@ func handler(conn net.Conn) {
 				}
 				panic(err)
 			}
+			rw.Flush()
 		}
 	}
 }
