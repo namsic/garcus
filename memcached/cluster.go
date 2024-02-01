@@ -25,6 +25,10 @@ func NewCluster(zkConn *zk.Conn, serviceCode string) *Cluster {
 	return cluster
 }
 
+func (self *Cluster) GetServers() map[string]*Server {
+	return self.servers
+}
+
 func (self *Cluster) FindNodeByKey(key []byte) *Server {
 	digest := md5.Sum(key)
 

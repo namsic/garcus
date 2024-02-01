@@ -15,6 +15,16 @@ type Server struct {
 	readChan  chan operation
 }
 
+func (self *Server) AsyncOperation() -> chan []byte {
+	responseCh := make(chan []byte)
+
+	return responseCh
+}
+
+func (self *Server) AsyncOperation() -> []byte {
+	return <-self.AsyncOperation()
+}
+
 type operation struct {
 	raw          []byte
 	receiverChan chan<- []byte // FIXME: Use Response struct instead of slice to contain more information

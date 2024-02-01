@@ -74,6 +74,21 @@ func handler(conn net.Conn) {
 				panic(err)
 			}
 			rw.Flush()
+		case "stats":
+			for addr, node := range memcachedCluster.GetServers() {
+				responseChan := make(chan []byte)
+				node.Request(raw, responseChan)
+				response := <-responseChan
+				_, err = rw.Write([]byte(addr + "\n"))
+				_, err = rw.Write(response)
+				if err != nil {
+					if err == io.EOF {
+						break
+					}
+					panic(err)
+				}
+				rw.Flush()
+			}
 		}
 	}
 }
