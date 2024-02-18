@@ -12,7 +12,7 @@ import (
 
 const operationBufferLength = 100
 
-type server struct {
+type asciiConnection struct {
 	op2write chan operation
 	op2read  chan operation
 }
@@ -22,7 +22,7 @@ func Connect(address string) (Operator, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := server{
+	s := asciiConnection{
 		op2write: make(chan operation, operationBufferLength),
 		op2read:  make(chan operation, operationBufferLength),
 	}
@@ -30,24 +30,24 @@ func Connect(address string) (Operator, error) {
 	return &s, nil
 }
 
-func (self *server) AsyncOperation(asciiCommand []byte) (<-chan []byte, <-chan error) {
+func (c *asciiConnection) AsyncOperation(asciiCommand []byte) (<-chan []byte, <-chan error) {
 	responseChan := make(chan []byte)
 	errorChan := make(chan error)
 	op := operation{
-		asciiCommand: asciiCommand,
+		command:      asciiCommand,
 		responseChan: responseChan,
 		errorChan:    errorChan,
 	}
 	if bytes.HasSuffix(asciiCommand, []byte("\r\n")) {
-		self.op2write <- op
+		c.op2write <- op
 	} else {
 		op.errorResponse(os.ErrInvalid)
 	}
 	return responseChan, errorChan
 }
 
-func (self *server) Operation(asciiCommand []byte) ([]byte, error) {
-	responseChan, errorChan := self.AsyncOperation(asciiCommand)
+func (c *asciiConnection) Operation(asciiCommand []byte) ([]byte, error) {
+	responseChan, errorChan := c.AsyncOperation(asciiCommand)
 	select {
 	case response := <-responseChan:
 		return response, nil
@@ -56,20 +56,20 @@ func (self *server) Operation(asciiCommand []byte) ([]byte, error) {
 	}
 }
 
-func (self *server) handleOperation(conn net.Conn) {
+func (c *asciiConnection) handleOperation(conn net.Conn) {
 	defer conn.Close()
 	writer := bufio.NewWriter(conn)
 	reader := bufio.NewReader(conn)
 
 	for {
 		select {
-		case op := <-self.op2write:
-			if err := self.writeOperation(writer, op); err != nil {
+		case op := <-c.op2write:
+			if err := c.writeOperation(writer, op); err != nil {
 				op.errorResponse(err)
 				return
 			}
-		case op := <-self.op2read:
-			if response, err := self.readResponse(reader, op); err != nil {
+		case op := <-c.op2read:
+			if response, err := c.readResponse(reader, op); err != nil {
 				op.errorResponse(err)
 				return
 			} else {
@@ -79,18 +79,18 @@ func (self *server) handleOperation(conn net.Conn) {
 	}
 }
 
-func (self *server) writeOperation(writer *bufio.Writer, op operation) error {
-	if _, err := writer.Write(op.asciiCommand); err != nil {
+func (c *asciiConnection) writeOperation(writer *bufio.Writer, op operation) error {
+	if _, err := writer.Write(op.command); err != nil {
 		return err
 	}
 	if err := writer.Flush(); err != nil {
 		return err
 	}
-	self.op2read <- op
+	c.op2read <- op
 	return nil
 }
 
-func (self *server) readResponse(reader *bufio.Reader, op operation) ([]byte, error) {
+func (c *asciiConnection) readResponse(reader *bufio.Reader, op operation) ([]byte, error) {
 	response := []byte{}
 	restResponse := 1
 
@@ -110,7 +110,7 @@ func (self *server) readResponse(reader *bufio.Reader, op operation) ([]byte, er
 			}
 			restResponse += n
 		case "VALUE":
-			command := strings.Split(string(op.asciiCommand), " ")[0]
+			command := strings.Split(string(op.command), " ")[0]
 			switch command {
 			case "get", "mget":
 				valueLen, err := strconv.Atoi(tokens[3])
@@ -143,6 +143,7 @@ func (self *server) readResponse(reader *bufio.Reader, op operation) ([]byte, er
 					if strings.HasPrefix(string(token), "0x") {
 						token, err = reader.ReadBytes(' ')
 						if err != nil {
+							return response, err
 						}
 						response = append(response, token...)
 					}

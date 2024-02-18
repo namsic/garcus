@@ -6,19 +6,19 @@ type Operator interface {
 }
 
 type operation struct {
-	asciiCommand []byte
+	command      []byte
 	responseChan chan<- []byte
 	errorChan    chan<- error
 }
 
-func (self *operation) errorResponse(err error) {
-	self.errorChan <- err
-	close(self.responseChan)
-	close(self.errorChan)
+func (o *operation) errorResponse(err error) {
+	o.errorChan <- err
+	close(o.responseChan)
+	close(o.errorChan)
 }
 
-func (self *operation) bytesResponse(bytes []byte) {
-	self.responseChan <- bytes
-	close(self.responseChan)
-	close(self.errorChan)
+func (o *operation) bytesResponse(bytes []byte) {
+	o.responseChan <- bytes
+	close(o.responseChan)
+	close(o.errorChan)
 }
