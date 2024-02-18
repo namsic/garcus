@@ -1,0 +1,29 @@
+name: CI test for internal package
+on:
+  push:
+    paths:
+    - internal/**
+    branches:
+    - main
+  pull_request:
+    paths:
+    - internal/**
+    branches:
+    - develop
+jobs:
+  unit_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version:
+        - 1.19.x
+        - 1.20.x
+        - 1.21.x
+    steps:
+    - uses: actions/checkout@v4
+    - run: docker compose -f .github/docker-compose.yaml up -d
+    - uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+    - run: go version
+    - run: go test ./internal/...

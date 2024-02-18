@@ -1,0 +1,74 @@
+services:
+  zookeeper:
+    image: zookeeper:3.5.9
+    hostname: zookeeper
+    ports:
+    - 2181:2181
+    environment:
+      ZOO_MY_ID: 1
+
+  register-1:
+    depends_on:
+    - zookeeper
+    image: namsic/arcus-tool
+    command:
+    - arcus.memcached
+    - add
+    - zookeeper:2181
+    - 127.0.0.1:11211
+    - test
+
+  memcached-1:
+    depends_on:
+      register-1:
+        condition: service_completed_successfully
+    image: jam2in/arcus-memcached
+    command: -v -p 11211 -z zookeeper:2181
+    ports:
+    - 11211:11211
+    environment:
+      ARCUS_CACHE_PUBLIC_IP: 127.0.0.1
+
+  register-2:
+    depends_on:
+    - zookeeper
+    image: namsic/arcus-tool
+    command:
+    - arcus.memcached
+    - add
+    - zookeeper:2181
+    - 127.0.0.1:11212
+    - test
+
+  memcached-2:
+    depends_on:
+      register-2:
+        condition: service_completed_successfully
+    image: jam2in/arcus-memcached
+    command: -v -p 11212 -z zookeeper:2181
+    ports:
+    - 11212:11212
+    environment:
+      ARCUS_CACHE_PUBLIC_IP: 127.0.0.1
+
+  register-3:
+    depends_on:
+    - zookeeper
+    image: namsic/arcus-tool
+    command:
+    - arcus.memcached
+    - add
+    - zookeeper:2181
+    - 127.0.0.1:11213
+    - test
+
+  memcached-3:
+    depends_on:
+      register-3:
+        condition: service_completed_successfully
+    image: jam2in/arcus-memcached
+    command: -v -p 11213 -z zookeeper:2181
+    ports:
+    - 11213:11213
+    environment:
+      ARCUS_CACHE_PUBLIC_IP: 127.0.0.1
