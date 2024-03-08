@@ -1,4 +1,4 @@
-module github.com/namsic/arcus-go
+module github.com/namsic/garcus
 
 go 1.19
 
